@@ -1,0 +1,97 @@
+# CareerAgent AI AWS SAM infrastructure.
+# Creates a low-cost HTTP API, Python Lambda, DynamoDB table, and private S3 bucket.
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: CareerAgent AI - Python + FastAPI low-cost serverless portfolio stack
+
+Parameters:
+  # Choose mock for zero AI API cost, or bedrock for managed AWS inference.
+  AiProvider:
+    Type: String
+    Default: mock
+    AllowedValues: [mock, bedrock]
+
+Globals:
+  Function:
+    Runtime: python3.12
+    Architectures: [arm64]
+    MemorySize: 512
+    Timeout: 30
+    Environment:
+      Variables:
+        AI_PROVIDER: !Ref AiProvider
+        TABLE_NAME: !Ref CareerTable
+        CV_BUCKET: !Ref CvBucket
+
+Resources:
+  # HTTP API forwards all application routes to the FastAPI Lambda function.
+  CareerApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      CorsConfiguration:
+        AllowOrigins: ['*']
+        AllowHeaders: ['content-type']
+        AllowMethods: [GET, POST, OPTIONS]
+
+  ApiFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ../backend/
+      Handler: app.handler
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref CareerTable
+        - S3CrudPolicy:
+            BucketName: !Ref CvBucket
+        - Statement:
+            - Effect: Allow
+              Action: bedrock:InvokeModel
+              Resource: '*'
+      Events:
+        Root:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref CareerApi
+            Path: /{proxy+}
+            Method: ANY
+        Health:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref CareerApi
+            Path: /health
+            Method: GET
+
+  # Serverless persistence for analyses; on-demand billing avoids fixed capacity.
+  CareerTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: pk
+          AttributeType: S
+      KeySchema:
+        - AttributeName: pk
+          KeyType: HASH
+      SSESpecification:
+        SSEEnabled: true
+
+  # Private CV storage with automatic cleanup for this portfolio/demo environment.
+  CvBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        IgnorePublicAcls: true
+        BlockPublicPolicy: true
+        RestrictPublicBuckets: true
+      LifecycleConfiguration:
+        Rules:
+          - Id: DeleteDemoUploads
+            Status: Enabled
+            ExpirationInDays: 7
+
+Outputs:
+  ApiUrl:
+    Value: !Sub 'https://${CareerApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}'
+  CvBucketName:
+    Value: !Ref CvBucket

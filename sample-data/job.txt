@@ -1,0 +1,2 @@
+Nexora Labs - AI Native Software Engineer
+Build AI-native products and backend systems. Strong Python, cloud and API development. Experience with LLMs, system design and production software. AWS, SQL, Docker, RAG and scalable backend architecture are valuable.

@@ -1,0 +1,1 @@
+Software Engineer with experience building AI-powered applications using JavaScript, Vue.js, Python, Firebase and Google Cloud. Integrated OpenAI and Gemini APIs, computer vision and NLP workflows. Worked across frontend and backend development, APIs, image/text processing, testing and DevOps. B.Sc. in Software Engineering.

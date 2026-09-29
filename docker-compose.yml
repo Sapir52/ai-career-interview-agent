@@ -1,0 +1,10 @@
+# Optional local Ollama service for running a real LLM without a paid cloud API.
+services:
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama:/root/.ollama
+volumes:
+  ollama:
